@@ -6,11 +6,13 @@ and present it in JSON format on *stdout*.
 
 Source:
 -------
-github.com/ibm/pfs/pfs-inventory
+github.com/IBM/jinventory
 
 Mailing list:
 -------------
 jentenma@us.ibm.com
+roger@us.ibm.com
+rpstewar@us.ibm.com
 
 License:
 --------
@@ -40,7 +42,7 @@ Examples:
     [root@host:~]$ jinventory storage
     { "drive00": { "info": { "path": "pci-0000:1b:00.0-scsi-0:2:0:0", "device": "\/dev\/sda", "vendor": "IBM", "model": "ServeRAID_M5110", "revision": "3.19", "snum": "3600605b0051b04b01b46d280226fbbce", "size": "11718746112", "scsi_generic": "sg0" } } }
 
-    [root@host:~]$ inventory storage | python -m json.tool
+    [root@host:~]$ jinventory storage | python -m json.tool
     {
         "drive00": {
             "info": {
@@ -74,11 +76,11 @@ The following git commands can be used:
 - git format-patch
 
 You probably want to read the linux Documentation/SubmittingPatches as
-much of it applies to pfs-inventory
+much of it applies to jinventory
 
 Submitting patches:
 -----------------
 
-  Subject: [pfs-inventory] Summary
+  Subject: [jinventory] Summary
 
 --
