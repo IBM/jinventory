@@ -38,6 +38,15 @@ struct pfsinv_info {
 	struct pfsinv_dpdr_info  *dpdri;
 };
 
+struct inv_dir_info {
+	char *name;
+};
+
+struct inv_dir_list {
+	struct inv_dir_info *info;
+	struct inv_dir_list *next;
+};
+
 
 /* pfsinv_inventory.c */
 int pfsinv_drive_info( unsigned int flags, char **json_str, void **jobj );

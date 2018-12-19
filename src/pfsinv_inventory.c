@@ -43,6 +43,7 @@
 #include <linux/if.h>
 #include <linux/ethtool.h>
 
+#define VERBOSE_DEBUG 1
 
 #if defined VERBOSE_DEBUG
 static int test_device_parents(struct udev *udev, const char *syspath);
@@ -63,6 +64,56 @@ static int is_ascii(const signed char *c, size_t len);
 static int verbose_debug = 0;
 
 #define PFSD_INV_FLAG_VERBOSE  (1<<0)
+
+static void init_inv_list ( struct inv_dir_list **head);
+static struct inv_dir_list  *add_inv_list ( struct inv_dir_list *node, struct inv_dir_info *info);
+static void print_inv_list(struct inv_dir_list *head);
+static void free_inv_list(struct inv_dir_list *head);
+
+
+struct inv_dir_list *find_subdirs( const char *path, struct inv_dir_list *dl_ptr )
+{
+	char  cfpath[256];
+	char  basepath[256];
+	char  dirname[256];
+	DIR *dirp;
+	struct dirent *dp;
+
+	memset((void *)cfpath,0,256);
+	memset((void *)basepath,0,256);
+	sprintf(cfpath,"%s", path);
+	sprintf(basepath,"%s", path);
+	struct inv_dir_info *dlinfo= NULL;
+
+	if ( 0 )
+		printf("cfpath = %s\n", cfpath);
+
+	dirp = opendir(cfpath);
+	while (dirp) {
+		if ((dp=readdir(dirp)) != NULL) {
+			if ((strcmp(".",dp->d_name)==0) || (strcmp("..",dp->d_name)==0))
+				continue;
+			if (dp->d_type == DT_DIR ){
+				memset((void *)dirname,0,256);
+				sprintf(dirname,"%s/%s",basepath, dp->d_name);
+				/*printf("%s is a directory\n", dirname);*/
+				dlinfo= (struct inv_dir_info *)malloc(sizeof(struct inv_dir_info));
+				dlinfo->name = malloc(strlen(dirname)+1);
+				memset((void *)dlinfo->name,0,strlen(dirname)+1);
+				strncpy(dlinfo->name, dirname, strlen(dirname));
+				/*printf("%s\n", dlinfo->name);*/
+				dl_ptr = add_inv_list( dl_ptr,dlinfo);
+				dl_ptr = find_subdirs( dirname, dl_ptr );
+			}
+		}
+		else {
+			break;
+		}
+	}
+	closedir(dirp);
+	return dl_ptr;
+}
+
 
 /* Storage */
 int pfsinv_num_drives( void )
@@ -240,7 +291,7 @@ int pfsinv_drive_info( unsigned int flags, char **json_str, void **jobj )
 	int num_drives;
 	struct udev *udev;
 	struct udev_enumerate *enumerate;
-	struct udev_list_entry *devices, *dev_list_entry;
+	struct udev_list_entry *devices, *dev_list_entry, *list_entry;
 	struct udev_device *dev;
 	json_object *drive_object;
 	json_object *info_object;
@@ -286,24 +337,34 @@ int pfsinv_drive_info( unsigned int flags, char **json_str, void **jobj )
 		dev = udev_device_new_from_syspath(udev, path);
 		/* usb_device_get_devnode() returns the path to the device node
 		   itself in /dev. */
+
+#if 0
+		/* 
+		   The scsi reference doesn't work for sata or nvme 
+		*/
+
 		dev = udev_device_get_parent_with_subsystem_devtype(
 		       dev,
 		       "scsi",
 		       "scsi_device");
-
 		if (!dev) {
 			if ( verbose_debug ){
-				printf("Unable to find parent device.");
+				printf("\tUnable to find parent device.\n");
 			}
 			continue;
 		}
 
+#endif
 
+#if defined VERBOSE_DEBUG
+		if ( verbose_debug )
+			test_device(udev, path);
+#endif
 		dev = udev_device_new_from_syspath(udev, path);
-		id_bus = udev_device_get_property_value(dev, "ID_BUS");
-
+		id_bus = udev_device_get_property_value(dev, "DEVTYPE");
+		
 		if (id_bus != NULL){
-			if(strcmp(id_bus, "scsi") == 0){
+			if(strcmp(id_bus, "disk") == 0){
 
 				/* To get around partitioned drives we'll just make sure
 				   we haven't added the path already. This works by assuming
@@ -330,65 +391,7 @@ int pfsinv_drive_info( unsigned int flags, char **json_str, void **jobj )
 				if ( verbose_debug )
 					printf("property: path=%s\n", property); 
 
-				property = udev_device_get_property_value(dev, "DEVNAME");
-				if (property != NULL){
-					json_object_object_add(info_object, "device", json_object_new_string(property));
-					if ( verbose_debug )
-						printf("property: device=%s\n", property); 
-				}
-				property = udev_device_get_property_value(dev, "ID_VENDOR");
-				if (property != NULL){
-					json_object_object_add(info_object, "vendor", json_object_new_string(property));
-					if ( verbose_debug )
-						printf("property: vendor=%s\n", property); 
-				}
 
-				property = udev_device_get_property_value(dev, "ID_MODEL");
-				if (property != NULL){
-					json_object_object_add(info_object, "model", json_object_new_string(property));
-					if ( verbose_debug )
-						printf(" model=%s\n", property); 
-				}
-				property = udev_device_get_property_value(dev, "ID_REVISION");
-				if (property != NULL){
-					json_object_object_add(info_object, "revision", json_object_new_string(property));
-					if ( verbose_debug )
-						printf(" revision=%s\n", property); 
-				}
-				property = udev_device_get_property_value(dev, "ID_SERIAL");
-				if (property != NULL){
-					json_object_object_add(info_object, "snum", json_object_new_string(property));
-					if ( verbose_debug )
-						printf(" snum=%s\n", property); 
-				}
-
-				value = udev_device_get_sysattr_value(dev, "size");
-				if (value != NULL){
-					json_object_object_add(info_object, "size", json_object_new_string(value));
-					if ( verbose_debug )
-						printf(" size=%s\n", value); 
-				}
-
-				/* SCSO generic name is buried */
-				sprintf(cfpath,"%s/device/scsi_generic", path);
-
-				if ( verbose_debug )
-					printf("cfpath = %s\n", cfpath);
-				dirp = opendir(cfpath);
-				while (dirp) {
-					if ((dp=readdir(dirp)) != NULL) {
-						if ((strcmp(".",dp->d_name)==0) || (strcmp("..",dp->d_name)==0))
-							continue;
-						sprintf(sg_generic_str,"%s", dp->d_name);
-						json_object_object_add(info_object, "scsi_generic", json_object_new_string(dp->d_name));
-					}
-					else {
-						break;
-					}
-				}
-				closedir(dirp);
-
-#if 0
 				udev_list_entry_foreach(list_entry, udev_device_get_properties_list_entry(dev)) {
 					property = udev_list_entry_get_name(list_entry);
 					value =    udev_list_entry_get_value(list_entry);
@@ -407,7 +410,25 @@ int pfsinv_drive_info( unsigned int flags, char **json_str, void **jobj )
 						json_object_object_add(info_object, property, json_object_new_string(value));
 				}
 
-#endif
+				/* SCSI generic name is buried */
+				sprintf(cfpath,"%s/device/scsi_generic", path);
+
+				if ( verbose_debug )
+					printf("cfpath = %s\n", cfpath);
+				dirp = opendir(cfpath);
+				while (dirp) {
+					if ((dp=readdir(dirp)) != NULL) {
+						if ((strcmp(".",dp->d_name)==0) || (strcmp("..",dp->d_name)==0))
+							continue;
+						sprintf(sg_generic_str,"%s", dp->d_name);
+						json_object_object_add(info_object, "scsi_generic", json_object_new_string(dp->d_name));
+					}
+					else {
+						break;
+					}
+				}
+				closedir(dirp);
+
 				drive_object = json_object_new_object();
 				json_object_object_add(drive_object,"info", info_object);
 
@@ -444,6 +465,7 @@ int pfsinv_drive_info( unsigned int flags, char **json_str, void **jobj )
 
 	return num_drives;
 }
+
 
 /*
  * **********************************************************************
@@ -498,8 +520,16 @@ int pfsinv_cpu_info( unsigned int flags, char **json_str, void **jobj )
 		const char *property;
 		const char *value;
 		char  cfpath[256];
+		char  tmppath[256];
 		DIR *dirp;
 		struct dirent *dp;
+		char *subdirs[] = {"cpufreq", "cpuidle", "thermal_throttle","topology",
+				   "microcode", "hotplug", "power", NULL};
+		int sdidx;
+
+		struct inv_dir_list  *dl_head = NULL;
+		struct inv_dir_list  *dl_node = NULL;
+		struct inv_dir_list  *dl_next = NULL;
 
 		memset((void *)cfpath,0,256);
 
@@ -513,7 +543,19 @@ int pfsinv_cpu_info( unsigned int flags, char **json_str, void **jobj )
 		/* new info object */
 		info_object = json_object_new_object();
 
-		 
+		/* Build the inventory directory list for this device */
+		init_inv_list ( &dl_head);
+		dl_head = find_subdirs(path, dl_head);
+#if 0
+		for (dl_node = dl_head; dl_node; dl_node = dl_node->next){
+			printf ("%s\n", dl_node->info->name);
+		}
+		print_inv_list(dl_head);
+#endif
+
+		/* 
+                 * This will get everything at this level
+		 */
 		udev_list_entry_foreach(list_entry, udev_device_get_properties_list_entry(dev)) {
 			property = udev_list_entry_get_name(list_entry);
 			value =    udev_list_entry_get_value(list_entry);
@@ -533,32 +575,47 @@ int pfsinv_cpu_info( unsigned int flags, char **json_str, void **jobj )
 		}
 
 		/*
-		 * I cannot figure out how to use the library to get attributes that are in
-		 * subdirectories. For "cpufreq" we'll use readdir to list the directory and 
-		 * read the attributes (which are files in the cpufreq direcectory).
+		 * This bit of code will get the values that are in subdirectories
 		 */
 		path = udev_list_entry_get_name(dev_list_entry);
-		sprintf(cfpath,"%s/cpufreq", path);
 
-		if ( verbose_debug )
-			printf("cfpath = %s\n", cfpath);
-		dirp = opendir(cfpath);
-		while (dirp) {
-			if ((dp=readdir(dirp)) != NULL) {
-				if ((strcmp(".",dp->d_name)==0) || (strcmp("..",dp->d_name)==0))
-					continue;
-				sprintf(cfpath,"cpufreq/%s", dp->d_name);
-				value = udev_device_get_sysattr_value(dev,cfpath);
-				if ( verbose_debug )
-					printf("%s=%s\n", cfpath, value);
-				if ( value != NULL )
-					json_object_object_add(info_object, dp->d_name, json_object_new_string(value));
+		for (dl_node = dl_head; dl_node; dl_node = dl_node->next){
+			sprintf(cfpath,"%s", dl_node->info->name);
+			if ( verbose_debug )
+				printf("cfpath = %s\n", cfpath);
+			dirp = opendir(cfpath);
+			while (dirp) {
+				if ((dp=readdir(dirp)) != NULL) {
+					if ((strcmp(".",dp->d_name)==0) || (strcmp("..",dp->d_name)==0))
+						continue;
+					if (dp->d_type == DT_DIR )
+						continue;
+					char *cptr;
+					memset(tmppath,0,256);
+					sprintf(tmppath,"%s/%s", cfpath,dp->d_name);
+					/* strip off the path */
+					cptr = (char *)tmppath+strlen(path);
+					value = udev_device_get_sysattr_value(dev,cptr);
+					if ( verbose_debug )
+						printf("%s=%s\n", cptr, value);
+					if ( value != NULL ){
+						json_object_object_add(info_object, cptr, json_object_new_string(value));
+					}
+					else {
+						value = udev_device_get_property_value(dev,cptr);
+						if ( value != NULL )
+							json_object_object_add(info_object, cptr, json_object_new_string(value));
+					}
+				}
+				else {
+					break;
+				}
 			}
-			else {
-				break;
-			}
+			closedir(dirp);
 		}
-		closedir(dirp);
+		
+		/* Free up the inventory directory list */
+		free_inv_list(dl_head);
 
 		cpu_object = json_object_new_object();
 		json_object_object_add(cpu_object,"info", info_object);
@@ -768,6 +825,9 @@ int pfsinv_net_info( unsigned int flags, char **json_str, void **jobj )
 				if ((strcmp(".",dp->d_name)==0) || (strcmp("..",dp->d_name)==0))
 					continue;
 				sprintf(cfpath,"statistics/%s", dp->d_name);
+				if ( /*verbose_debug*/1 )
+					printf("cfpath = %s\n", cfpath);
+
 				value = udev_device_get_sysattr_value(dev,cfpath);
 				if ( verbose_debug )
 					printf("%s=%s\n", cfpath, value);
@@ -1238,6 +1298,41 @@ static int is_ascii(const signed char *c, size_t len)
 	}
 	return 1;
 }
+
+static void init_inv_list ( struct inv_dir_list **head)
+{
+	*head=NULL;
+}
+
+static struct inv_dir_list  *add_inv_list ( struct inv_dir_list *node, struct inv_dir_info *info)
+{
+	struct inv_dir_list *tmpnode = (struct inv_dir_list *)malloc(sizeof(struct inv_dir_list));
+	tmpnode->info = info;
+	tmpnode->next = node;
+	node = tmpnode;
+	return node;
+}
+
+
+static void print_inv_list(struct inv_dir_list *head)
+{
+	struct inv_dir_list *temp;
+	for (temp = head; temp; temp = temp->next)
+		printf(" ******** %s\n", temp->info->name);
+}
+
+static void free_inv_list(struct inv_dir_list *head)
+{
+	struct inv_dir_list *temp, *tf;
+	for (temp = head; temp; ){
+		free(temp->info->name);
+		free(temp->info);
+		tf = temp;
+		temp = temp->next;
+		free(tf);
+	}
+}
+
 
 #if defined VERBOSE_DEBUG
 static void print_device(struct udev_device *device)
