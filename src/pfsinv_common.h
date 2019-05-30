@@ -27,6 +27,11 @@
  */
 #define NET_SHOW_VIRTUAL_INTERFACES
 
+/*
+ * Only show physical disks
+ */
+/*#define DISK_SHOW_VIRTUAL_INTERFACES*/
+
 struct pfsinv_dpdr_info {
 	struct dp_ioc_attr *dpi;
 	int fd;

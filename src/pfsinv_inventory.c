@@ -372,7 +372,7 @@ int pfsinv_drive_info( unsigned int flags, char **json_str, void **jobj )
 				   It should equal one of these two. Do SAS_PATH first since whatever is
 				   running RHEL 7.2 has both but the phy number is only in SAS_PATH.
 				*/
-				property = udev_device_get_property_value(dev, "ID_SAS_PATH");
+				property = udev_device_get_property_value(dev, "DEVPATH");
 
 				if ( property == NULL ){
 					property = udev_device_get_property_value(dev, "ID_PATH");
@@ -381,6 +381,12 @@ int pfsinv_drive_info( unsigned int flags, char **json_str, void **jobj )
 					continue;  /* should never hit this */
 				if( strcmp(last_path, property) == 0 )
 					continue;
+
+#if !defined (DISK_SHOW_VIRTUAL_INTERFACES)
+				/* check if we show virtual interfaces */
+				if (strstr(property, "virtual") != NULL)
+					continue;
+#endif
 
 				if ( verbose_debug )
 					printf(" *** last_path=%s, property=%s\n", last_path, property);
