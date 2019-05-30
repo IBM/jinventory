@@ -6,7 +6,7 @@ and present it in JSON format on *stdout*.
 
 Source:
 -------
-github.com/IBM/jinventory
+https://github.com/IBM/jinventory
 
 Mailing list:
 -------------
@@ -22,8 +22,8 @@ Compilation dependencies:
 -------------------------
 - C and C++ compiler (gcc, g++)
 - GNU build tools (automake, autoconf, libtool, etc)
-- yum: libudev-devel  Debian: libudev-dev
-- yum: json-c-devel    Debian: libjson0 libjson0-dev
+- yum: libudev-devel Debian: libudev-dev
+- yum: json-c-devel Debian: libjson0 libjson0-dev
 
 Binary dependencies:
 -------------
@@ -31,11 +31,12 @@ Binary dependencies:
 
 Building:
 ---------
-*$ ./configure
+```
+$ ./configure
 $ make
-$ make install*
-
-The binary "*jinventory*" will be installed to */usr/local/bin*
+$ make install
+```
+The binary "*jinventory*" will be installed to `/usr/local/bin`
 
 Examples:
 
@@ -72,10 +73,11 @@ Hacking:
 --------
 All patches should be sent to the mailing list with linux-kernel style 'Signed-Off-By'. 
 The following git commands can be used:
+```
 - git commit -s
 - git format-patch
-
-You probably want to read the linux Documentation/SubmittingPatches as
+```
+You probably want to read the linux Documentation/Submitting Patches as
 much of it applies to jinventory
 
 Submitting patches:
