@@ -1,12 +1,17 @@
-inventory:
+jinventory:
 -------
 The inventory package is a tool that harvests data from sysfs and presents the data
 in JSON format on stdout. 
-It supports CPU, network, scsi storage devices and scsi hosts.
+It supports CPU, network, and strorage devices.
+
+** This release moved the guts of the code into a library called libjinventory
+   so it could be easily consumed elsewhere.
+   It also requires autoreconf to be run. This was done to make it palatable to
+   some cross compilation environments it is being used in.
 
 Source:
 -------
-github.com/ibm/pfs/pfs-inventory
+github.com/ibm/jinventory
 
 Mailing list:
 -------------
@@ -22,12 +27,16 @@ Compilation dependencies:
 - yum: libudev-devel  Debian: libudev-dev
 - yum: json-c-devel   Debian: libjson0 libjson0-dev
 
+ libjinventory should be built and installed first
+ github.com/ibm/libjinventory
+
 Binary dependencies:
 -------------
-  libudev & json-c .so 
+  libjinventory libudev & json-c .so 
 
 Building:
 ---------
+$ autoreconf --install --force
 $ ./configure
 $ make
 $ make install
@@ -80,6 +89,6 @@ much of it applies to pfs-inventory
 Submitting patch:
 -----------------
 
-  Subject: [pfs-inventory] Summary
+  Subject: [jinventory] Summary
 
 --

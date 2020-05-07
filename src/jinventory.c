@@ -33,9 +33,10 @@
 #include <sched.h>
 #include <errno.h>
 #include <json-c/json.h>
-#include "pfsinv_common.h"
+/* #include "pfsinv_common.h" */
 #include "config.h"
 #include <getopt.h>
+#include <libjinventory/libjinventory.h>
 
 static int show_drive_info(void);
 static int show_cpu_info(void);
@@ -117,7 +118,7 @@ int main (int argc, char **argv)
 		show_drive_info();
 	}
 	else if (strcmp (device, "scsi_host") == 0 ) {
-		pfsinv_scsi_hosts_show_json();
+		jinventory_scsi_hosts_show_json();
 	}
 	else if (strcmp (device, "all") == 0 ){
 		show_all_info();
@@ -136,19 +137,19 @@ int main (int argc, char **argv)
 
 static int show_drive_info(void)
 {
-	pfsinv_drives_show_json();
+	jinventory_drives_show_json();
 	return 0;
 }
 
 static int show_cpu_info(void)
 {
-	pfsinv_cpus_show_json();
+	jinventory_cpus_show_json();
 	return 0;
 }
 
 static int show_net_info(void)
 {
-	pfsinv_nets_show_json();
+	jinventory_nets_show_json();
 	return 0;
 }
 
@@ -156,7 +157,7 @@ static int show_all_info(void)
 {
 	char *invstr = NULL;
 
-	invstr = pfsinv_inventory_get_json_str();
+	invstr = jinventory_inventory_get_json_str();
 
 	if ( invstr != NULL ){
 		printf("%s",invstr);

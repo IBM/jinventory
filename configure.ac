@@ -17,7 +17,7 @@ AC_SUBST(GENERIC_VERSION)
 VERSION=$GENERIC_VERSION
 
 #base
-AC_INIT([pfs-inventory],[1.1.0],[jentenma@us.ibm.com])
+AC_INIT([jinventory],[1.1.0],[jentenma@us.ibm.com])
 AM_INIT_AUTOMAKE([-Wall subdir-objects -Werror foreign])
 AC_CONFIG_HEADERS([config.h])
 
