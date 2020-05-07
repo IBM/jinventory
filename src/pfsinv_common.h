@@ -27,6 +27,11 @@
  */
 #define NET_SHOW_VIRTUAL_INTERFACES
 
+/*
+ * Only show physical disks
+ */
+/*#define DISK_SHOW_VIRTUAL_INTERFACES*/
+
 struct pfsinv_dpdr_info {
 	struct dp_ioc_attr *dpi;
 	int fd;
@@ -36,6 +41,15 @@ struct pfsinv_info {
 	unsigned long long data;
 	int num_drives;
 	struct pfsinv_dpdr_info  *dpdri;
+};
+
+struct inv_dir_info {
+	char *name;
+};
+
+struct inv_dir_list {
+	struct inv_dir_info *info;
+	struct inv_dir_list *next;
 };
 
 
