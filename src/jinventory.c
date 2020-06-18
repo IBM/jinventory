@@ -42,13 +42,14 @@ static int show_drive_info(void);
 static int show_cpu_info(void);
 static int show_all_info(void);
 static int show_net_info(void);
+static int show_fpga_info(void);
 
 static int verbose_flag;
 
 void usage( void )
 {
 	printf(" Usage: jinventory <device>\n"
-	       "   device: storage, net, cpu, all\n"
+	       "   device: storage, net, cpu, fpga, all\n"
 	       "       If no option is given the output will be the same as \"all\"\n");
 	printf(" This command will print ou a JSON string of the udev informatiom found in sysfs\n"
 	       "    of one or all of the devices shown above.\n" );
@@ -120,6 +121,9 @@ int main (int argc, char **argv)
 	else if (strcmp (device, "scsi_host") == 0 ) {
 		jinventory_scsi_hosts_show_json();
 	}
+	else if (strcmp (device, "fpga") == 0 ) {
+		show_fpga_info();
+	}
 	else if (strcmp (device, "all") == 0 ){
 		show_all_info();
 	}
@@ -138,6 +142,12 @@ int main (int argc, char **argv)
 static int show_drive_info(void)
 {
 	jinventory_drives_show_json();
+	return 0;
+}
+
+static int show_fpga_info(void)
+{
+	jinventory_fpga_show_json();
 	return 0;
 }
 
