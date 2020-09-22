@@ -49,7 +49,7 @@ static int verbose_flag;
 void usage( void )
 {
 	printf(" Usage: jinventory <device>\n"
-	       "   device: storage, net, cpu, fpga, all\n"
+	       "   device: storage, net, cpu, fpga, scsi_host, fc_host, all\n"
 	       "       If no option is given the output will be the same as \"all\"\n");
 	printf(" This command will print ou a JSON string of the udev informatiom found in sysfs\n"
 	       "    of one or all of the devices shown above.\n" );
@@ -120,6 +120,9 @@ int main (int argc, char **argv)
 	}
 	else if (strcmp (device, "scsi_host") == 0 ) {
 		jinventory_scsi_hosts_show_json();
+	}
+	else if (strcmp (device, "fc_host") == 0 ) {
+		jinventory_fc_hosts_show_json();
 	}
 	else if (strcmp (device, "fpga") == 0 ) {
 		show_fpga_info();
